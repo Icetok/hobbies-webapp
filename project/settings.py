@@ -46,9 +46,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'corsheaders',
 ]
 
 AUTH_USER_MODEL = "api.CustomUser"
+
+# Authentication
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -59,6 +64,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+]
+
+# Allow localhost for development
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',  # Vue frontend URL
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',  # Frontend origin
 ]
 
 ROOT_URLCONF = 'project.urls'
