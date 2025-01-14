@@ -23,4 +23,5 @@ urlpatterns = [
     path('hobbies/', views.get_hobbies, name='get_hobbies'),
     path('logout/', views.logout_view, name='logout'),
     path('auth-status/', views.auth_status_view, name='auth_status'),
+    path('similar-users/', views.similar_users, name='similar_users'),
 ]

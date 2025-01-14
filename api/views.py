@@ -6,7 +6,7 @@ from .forms import CustomUserCreationForm, LoginForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from .models import Hobby
+from .models import Hobby, CustomUser  # Import CustomUser from local models
 import json
 
 @csrf_exempt
@@ -70,3 +70,31 @@ def get_hobbies(request):
 @login_required
 def auth_status_view(request):
     return JsonResponse({'isAuthenticated': True})
+
+@login_required
+def similar_users(request):
+    current_user = request.user
+    current_user_hobbies = set(current_user.hobbies.all())
+    
+    # Get all users except the current user
+    all_users = CustomUser.objects.exclude(id=current_user.id)
+    
+    # Calculate similarity scores
+    user_similarities = []
+    for user in all_users:
+        user_hobbies = set(user.hobbies.all())
+        common_hobbies = current_user_hobbies.intersection(user_hobbies)
+        similarity_score = len(common_hobbies)
+        
+        if similarity_score > 0:  # Only include users with at least one hobby in common
+            user_similarities.append({
+                'username': user.username,
+                'name': user.name,
+                'common_hobbies': [hobby.name for hobby in common_hobbies],
+                'similarity_score': similarity_score
+            })
+    
+    # Sort by similarity score (highest first)
+    user_similarities.sort(key=lambda x: x['similarity_score'], reverse=True)
+    
+    return JsonResponse({'similar_users': user_similarities})

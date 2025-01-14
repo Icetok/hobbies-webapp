@@ -5,6 +5,7 @@ import MainPage from '../pages/MainPage.vue';
 import OtherPage from '../pages/OtherPage.vue';
 import SignupPage from '../pages/SignupPage.vue';
 import LoginPage from '../pages/LoginPage.vue';
+import SimilarUsersPage from '../pages/SimilarUsersPage.vue';
 
 let base = (import.meta.env.MODE === 'development') ? import.meta.env.BASE_URL : '';
 
@@ -25,6 +26,12 @@ const router = createRouter({
       component: OtherPage,
       meta: { requiresAuth: true }, // Protect this route
     },
+    {
+      path: '/similar-users/',
+      name: 'Similar Users',
+      component: SimilarUsersPage,
+      meta: { requiresAuth: true },
+    }
   ],
 });
 
