@@ -71,6 +71,7 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',  # Vue frontend URL
 ]
+CORS_ALLOW_CREDENTIALS = True #for dev
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',  # Frontend origin

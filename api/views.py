@@ -70,3 +70,17 @@ def get_hobbies(request):
 @login_required
 def auth_status_view(request):
     return JsonResponse({'isAuthenticated': True})
+
+@login_required
+def get_user_profile(request):
+    user = request.user
+    hobbies = user.hobbies.all()  # Get user's hobbies
+
+    profile_data = {
+        'name': user.name,
+        'email': user.email,
+        'date_of_birth': user.date_of_birth,
+        'hobbies': [{'id': hobby.id, 'name': hobby.name} for hobby in hobbies],
+    }
+    
+    return JsonResponse(profile_data)
