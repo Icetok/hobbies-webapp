@@ -1,12 +1,17 @@
 <template>
   <main class="container pt-4">
-    <div>
-      <router-link v-if="!isAuthenticated" :to="{ name: 'Signup' }">Signup</router-link> |
-      <router-link v-if="!isAuthenticated" :to="{ name: 'Login' }">Login</router-link> |
-      <router-link v-if="isAuthenticated" :to="{ name: 'Main Page' }">Main Page</router-link> |
-      <router-link v-if="isAuthenticated" :to="{ name: 'Other Page' }">Other Page</router-link> |
-      <router-link v-if="isAuthenticated" :to="{ name: 'Similar Users' }">Similar Users</router-link> |
-      <button v-if="isAuthenticated" @click="logout">Logout</button>
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <router-link v-if="!isAuthenticated" :to="{ name: 'Signup' }">Signup</router-link> |
+        <router-link v-if="!isAuthenticated" :to="{ name: 'Login' }">Login</router-link> |
+        <router-link v-if="isAuthenticated" :to="{ name: 'Main Page' }">Main Page</router-link> |
+        <router-link v-if="isAuthenticated" :to="{ name: 'Other Page' }">Other Page</router-link> |
+        <router-link v-if="isAuthenticated" :to="{ name: 'Similar Users' }">Similar Users</router-link> |
+        <button v-if="isAuthenticated" @click="logout">Logout</button>
+      </div>
+      <div v-if="isAuthenticated" class="text-muted">
+        Logged in as: {{ username }}
+      </div>
     </div>
     <RouterView class="flex-shrink-0" />
   </main>
@@ -22,8 +27,9 @@ export default defineComponent({
     const userStore = useUserStore();
     const router = useRouter();
 
-    // Reactive computed property for authentication status
+    // Reactive computed properties
     const isAuthenticated = computed(() => userStore.isAuthenticated);
+    const username = computed(() => userStore.username);
 
     const logout = async () => {
       const response = await fetch('http://127.0.0.1:8000/api/logout/', {
@@ -42,6 +48,7 @@ export default defineComponent({
 
     return {
       isAuthenticated,
+      username,
       logout,
     };
   },

@@ -4,7 +4,7 @@
     <div v-if="loading">Loading...</div>
     
     <div v-if="referenceUser" class="alert alert-info mb-3">
-      Showing similarities based on {{ referenceUser }}'s hobbies
+      Showing similarities based on {{ referenceUser }}'s hobbies.
     </div>
     
     <div v-if="!loading && similarUsers.length > 0">
