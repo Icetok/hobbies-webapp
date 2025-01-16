@@ -11,7 +11,7 @@
       <div v-for="user in similarUsers" :key="user.name" class="user-card mb-3 p-3 border rounded">
         <h3>{{ user.name }}</h3>
         <p>
-          <strong>{{ user.similarity_score }} {{ user.similarity_score === 1 ? 'Hobby' : 'Hobbies' }} in Common:</strong>
+          <strong>{{ user.similarity_score }} {{ user.similarity_score === 1 ? 'hobby' : 'hobbies' }} in common: </strong>
           <span v-for="(hobby, index) in user.common_hobbies" :key="hobby.id">
             {{ hobby.name }}{{ index < user.common_hobbies.length - 1 ? ', ' : '' }}
           </span>

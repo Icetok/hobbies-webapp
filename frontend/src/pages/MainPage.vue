@@ -6,7 +6,7 @@
     <div v-else>
       <p><strong>Name:</strong> {{ userProfile.name }}</p>
       <p><strong>Email:</strong> {{ userProfile.email }}</p>
-      <p><strong>Date of Birth:</strong> {{ userProfile.date_of_birth }}</p>
+      <p><strong>Date of Birth:</strong> {{ formattedDateOfBirth }}</p>
 
       <div v-if="userProfile.hobbies.length > 0">
         <strong>Hobbies:</strong>
@@ -44,6 +44,15 @@ export default defineComponent({
     userProfile() {
       return this.userStore.profile;
     },
+    formattedDateOfBirth() {
+      if (!this.userProfile?.date_of_birth) return '';
+      const date = new Date(this.userProfile.date_of_birth);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
   },
   data() {
     return {
