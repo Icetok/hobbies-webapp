@@ -59,13 +59,18 @@
           const response = await fetch("http://127.0.0.1:8000/api/similar-users/", {
             method: "GET",
             credentials: "include",
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            }
           });
-  
+
+          const data = await response.json();
           if (response.ok) {
-            const data = await response.json();
             this.similarUsers = data.similar_users;
+            console.log("Fetched similar users:", data);
           } else {
-            console.error("Failed to fetch similar users");
+            console.error("Failed to fetch similar users:", data.error);
           }
         } catch (error) {
           console.error("Error fetching similar users:", error);
@@ -74,12 +79,8 @@
         }
       },
     },
-    mounted() {
-      if (!this.isAuthenticated) {
-        this.$router.push('/login');
-      } else {
-        this.fetchSimilarUsers();
-      }
+    async mounted() {
+      await this.fetchSimilarUsers();
     },
   });
   </script>

@@ -24,20 +24,36 @@ export default defineComponent({
   },
   methods: {
     async login() {
-      const response = await fetch('http://127.0.0.1:8000/api/login/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.formData),
-      });
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/login/', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(this.formData),
+        });
 
-      if (response.ok) {
-        const userStore = useUserStore();
-        userStore.login(); // Update the user store
-        alert('Login successful!');
-        this.$router.push({ name: 'Main Page' }); // Redirect to main page
-      } else {
-        const errorData = await response.json();
-        alert(`Login failed: ${errorData.error}`);
+        const data = await response.json();
+        
+        if (response.ok && data.isAuthenticated) {
+          const userStore = useUserStore();
+          userStore.login(data.username);
+          userStore.setProfile(data.profile);
+          console.log('Login successful, session:', data.sessionid);
+          
+          // Wait a brief moment for the session to be established
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          this.$router.push('/');
+        } else {
+          console.error('Login failed:', data.error);
+          alert(`Login failed: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed: Network error');
       }
     },
   },

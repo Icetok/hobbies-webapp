@@ -22,7 +22,8 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('hobbies/', views.get_hobbies, name='get_hobbies'),
     path('logout/', views.logout_view, name='logout'),
-    path('auth-status/', views.auth_status_view, name='auth_status'),
+    path('auth-status/', views.auth_status, name='auth_status'),
     path('user-profile/', views.get_user_profile, name='get_user_profile'),
     path('similar-users/', views.get_similar_users, name='similar_users'),
+    path('check-session/', views.check_session, name='check_session'),
 ]

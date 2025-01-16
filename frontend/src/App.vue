@@ -28,15 +28,15 @@ export default defineComponent({
     const logout = async () => {
       const response = await fetch('http://127.0.0.1:8000/api/logout/', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
       if (response.ok) {
         userStore.logout();
-        alert("You have been successfully logged out!");
-        router.push({ name: 'Login' }); // Redirect to the login page after logout
+        router.push('/login');
       } else {
-        alert("Failed to log out. Please try again.");
+        console.error('Logout failed');
       }
     };
 

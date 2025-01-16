@@ -12,19 +12,19 @@ let base = (import.meta.env.MODE === 'development') ? import.meta.env.BASE_URL :
 const router = createRouter({
   history: createWebHistory(base),
   routes: [
-    { path: '/signup/', name: 'Signup', component: SignupPage },
-    { path: '/login/', name: 'Login', component: LoginPage },
     {
       path: '/',
       name: 'Main Page',
       component: MainPage,
-      meta: { requiresAuth: true }, // Protect this route
+      meta: { requiresAuth: true },
     },
+    { path: '/signup/', name: 'Signup', component: SignupPage },
+    { path: '/login/', name: 'Login', component: LoginPage },
     {
       path: '/other/',
       name: 'Other Page',
       component: OtherPage,
-      meta: { requiresAuth: true }, // Protect this route
+      meta: { requiresAuth: true },
     },
     {
       path: '/similar-users/',

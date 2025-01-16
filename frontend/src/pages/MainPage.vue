@@ -26,56 +26,35 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, computed } from "vue";
 import { useUserStore } from "@/store/user";
-import { useRouter } from "vue-router"; // Vue Router for redirection
+import { useRouter } from "vue-router";
 
 export default defineComponent({
-  data() {
+  setup() {
+    const userStore = useUserStore();
     return {
-      userProfile: {
-        name: '',
-        email: '',
-        date_of_birth: '',
-        hobbies: [],
-      },
-      loading: true,
+      userStore,
     };
   },
   computed: {
     isAuthenticated() {
-      const userStore = useUserStore();
-      return userStore.isAuthenticated;
+      return this.userStore.isAuthenticated;
+    },
+    userProfile() {
+      return this.userStore.profile;
     },
   },
-  methods: {
-    async fetchUserProfile() {
-      try {
-        // Make GET request to fetch user profile with session cookies included
-        const response = await fetch("http://127.0.0.1:8000/api/user-profile/", {
-          method: "GET",
-          credentials: "include", // Ensure cookies (sessionid and csrftoken) are included
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          this.userProfile = data;
-        } else {
-          console.error("Failed to fetch user profile");
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      } finally {
-        this.loading = false;
-      }
-    },
+  data() {
+    return {
+      loading: true,
+    };
   },
   mounted() {
     if (!this.isAuthenticated) {
-      // Redirect to login page if user is not authenticated
       this.$router.push('/login');
     } else {
-      this.fetchUserProfile(); // Fetch user profile when authenticated
+      this.loading = false;
     }
   },
 });
