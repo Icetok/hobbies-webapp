@@ -12,6 +12,22 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
 
 @csrf_exempt
+def hobbies_view(request):
+    if request.method == 'GET':
+        hobbies = list(Hobby.objects.values('id', 'name'))
+        return JsonResponse({'hobbies': hobbies}, safe=False)
+    elif request.method == 'POST':
+        new_hobby = Hobby()
+        new_hobby.name = json.loads(request.body)["hobby"]
+        new_hobby.save()
+        if request.user.is_authenticated:
+            user = request.user
+            user.hobbies.add(new_hobby)
+            user.save()
+        return JsonResponse({'message': 'Hobby Added Succesfully!'}, status=200)
+    return JsonResponse({'error': 'Method not allowed.'}, status=405)
+
+@csrf_exempt
 def signup_view(request):
     if request.method == 'POST':
         try:
@@ -86,12 +102,6 @@ def logout_view(request):
     if request.method == 'POST':
         logout(request)
         return JsonResponse({'message': 'Successfully logged out'})
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-def get_hobbies(request):
-    if request.method == 'GET':
-        hobbies = list(Hobby.objects.values('id', 'name'))
-        return JsonResponse({'hobbies': hobbies}, safe=False)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @login_required
