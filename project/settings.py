@@ -57,6 +57,7 @@ LOGIN_REDIRECT_URL = 'http://localhost:5173/'
 LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
 
 MIDDLEWARE = [
+    
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -161,9 +162,9 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_PATH = '/'
 SESSION_COOKIE_NAME = 'sessionid'
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'None'
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_AGE = 86400
 
@@ -186,6 +187,6 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:5173']
