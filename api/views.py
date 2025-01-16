@@ -10,6 +10,8 @@ from .models import Hobby, CustomUser
 import json
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth import update_session_auth_hash
 
 @csrf_exempt
 def hobbies_view(request):
@@ -180,3 +182,83 @@ def check_session(request):
             'cookies': request.COOKIES
         }
     })
+
+@csrf_exempt
+@login_required  # Make sure the user is authenticated
+def update_user_profile(request):
+    if request.method == 'PUT':
+        try:
+            # Load JSON data from the request body
+            data = json.loads(request.body.decode('utf-8'))
+
+            # Get the current user
+            user = request.user
+
+            # Update fields if they are provided in the request
+            if 'name' in data:
+                user.name = data['name']
+            if 'email' in data:
+                user.email = data['email']
+            if 'date_of_birth' in data:
+                user.date_of_birth = data['date_of_birth']
+
+            # Update hobbies if they are provided
+            if 'hobbies' in data:
+                user.hobbies.clear()  # Remove current hobbies
+                for hobby_id in data['hobbies']:
+                    try:
+                        hobby = Hobby.objects.get(id=hobby_id)
+                        user.hobbies.add(hobby)  # Add new hobbies
+                    except ObjectDoesNotExist:
+                        return JsonResponse({'error': f'Hobby with id {hobby_id} does not exist.'}, status=400)
+
+            # Save the updated user profile
+            user.save()
+
+            # Return the updated profile as response
+            updated_profile_data = {
+                'name': user.name,
+                'email': user.email,
+                'date_of_birth': user.date_of_birth,
+                'hobbies': [{'id': hobby.id, 'name': hobby.name} for hobby in user.hobbies.all()],
+            }
+
+            return JsonResponse(updated_profile_data, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        try:
+            # Parse request body
+            data = json.loads(request.body.decode('utf-8'))
+            current_password = data.get('current_password')
+            new_password = data.get('new_password')
+
+            # Validate inputs
+            if not current_password or not new_password:
+                return JsonResponse({'error': 'Both current_password and new_password are required.'}, status=400)
+
+            # Check if the current password is correct
+            user = request.user
+            if not user.check_password(current_password):
+                return JsonResponse({'error': 'Current password is incorrect.'}, status=400)
+
+            # Set the new password
+            user.set_password(new_password)
+            user.save()
+
+            # Keep the user logged in after password change
+            update_session_auth_hash(request, user)
+
+            return JsonResponse({'message': 'Password updated successfully.'}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

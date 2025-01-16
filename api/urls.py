@@ -26,4 +26,6 @@ urlpatterns = [
     path('user-profile/', views.get_user_profile, name='get_user_profile'),
     path('similar-users/', views.get_similar_users, name='similar_users'),
     path('check-session/', views.check_session, name='check_session'),
+    path('update-profile/', views.update_user_profile, name='update_user_profile'),
+    path('change-password/', views.change_password, name='change_password'),
 ]
