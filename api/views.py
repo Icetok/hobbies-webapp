@@ -6,7 +6,7 @@ from .forms import CustomUserCreationForm, LoginForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from .models import Hobby
+from .models import Hobby, CustomUser
 import json
 
 @csrf_exempt
@@ -84,3 +84,33 @@ def get_user_profile(request):
     }
     
     return JsonResponse(profile_data)
+
+@login_required
+def get_similar_users(request):
+    current_user = request.user
+    current_user_hobbies = set(current_user.hobbies.all())
+    print(f"Current user: {current_user.username}")
+    print(f"Current user hobbies: {[h.name for h in current_user_hobbies]}")
+    
+    # Get all users except the current user
+    all_users = CustomUser.objects.exclude(id=current_user.id)
+    print(f"Found {all_users.count()} other users")
+    
+    # Calculate similarity scores
+    user_similarities = []
+    for user in all_users:
+        user_hobbies = set(user.hobbies.all())
+        print(f"Checking user {user.username} with hobbies: {[h.name for h in user_hobbies]}")
+        common_hobbies = current_user_hobbies.intersection(user_hobbies)
+        similarity_score = len(common_hobbies)
+        print(f"Common hobbies: {[h.name for h in common_hobbies]}")
+        
+        if similarity_score > 0:
+            user_similarities.append({
+                'name': user.name,
+                'common_hobbies': [{'id': hobby.id, 'name': hobby.name} for hobby in common_hobbies],
+                'similarity_score': similarity_score
+            })
+    
+    print(f"Final similar users: {user_similarities}")
+    return JsonResponse({'similar_users': user_similarities})

@@ -24,4 +24,5 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('auth-status/', views.auth_status_view, name='auth_status'),
     path('user-profile/', views.get_user_profile, name='get_user_profile'),
+    path('similar-users/', views.get_similar_users, name='similar_users'),
 ]
