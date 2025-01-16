@@ -29,6 +29,7 @@
 import { defineComponent, computed } from "vue";
 import { useUserStore } from "@/store/user";
 import { useRouter } from "vue-router";
+import { log } from "console";
 
 export default defineComponent({
   setup() {
@@ -63,9 +64,36 @@ export default defineComponent({
     if (!this.isAuthenticated) {
       this.$router.push('/login');
     } else {
+      this.loadProfile();
       this.loading = false;
     }
   },
+  methods: {
+    async loadProfile() {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/user-profile/', {
+        method: 'GET',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        credentials: 'include',
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+        const userStore = useUserStore();
+        userStore.setProfile(data);
+        } else {
+            console.error('Fetching profile failed:', data.error);
+            alert(`Fetching profile failed: ${data.error}`);
+        }
+      } catch (error) {
+          console.error('Fetching profile error:', error);
+          alert('Fetching profile failed: Network error');
+      }
+    },
+  }
 });
 </script>
 

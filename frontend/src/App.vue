@@ -5,7 +5,7 @@
         <router-link v-if="!isAuthenticated" :to="{ name: 'Signup' }">Signup</router-link> |
         <router-link v-if="!isAuthenticated" :to="{ name: 'Login' }">Login</router-link> |
         <router-link v-if="isAuthenticated" :to="{ name: 'Main Page' }">Main Page</router-link> |
-        <router-link v-if="isAuthenticated" :to="{ name: 'Other Page' }">Other Page</router-link> |
+        <router-link v-if="isAuthenticated" :to="{ name: 'Add Hobby' }">Add Hobby</router-link> |
         <router-link v-if="isAuthenticated" :to="{ name: 'Similar Users' }">Similar Users</router-link> |
         <button v-if="isAuthenticated" @click="logout">Logout</button>
       </div>

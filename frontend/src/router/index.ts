@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useUserStore } from '@/store/user';
 
 import MainPage from '../pages/MainPage.vue';
-import OtherPage from '../pages/OtherPage.vue';
+import AddHobby from '../pages/AddHobby.vue';
 import SignupPage from '../pages/SignupPage.vue';
 import LoginPage from '../pages/LoginPage.vue';
 import SimilarUsersPage from '../pages/SimilarUsersPage.vue';
@@ -21,9 +21,9 @@ const router = createRouter({
     { path: '/signup/', name: 'Signup', component: SignupPage },
     { path: '/login/', name: 'Login', component: LoginPage },
     {
-      path: '/other/',
-      name: 'Other Page',
-      component: OtherPage,
+      path: '/add-hobby/',
+      name: 'Add Hobby',
+      component: AddHobby,
       meta: { requiresAuth: true },
     },
     {
