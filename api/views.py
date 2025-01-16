@@ -12,6 +12,10 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import update_session_auth_hash
+from django.http import JsonResponse
+from django.db.models import F, ExpressionWrapper, IntegerField, DateField, Q
+from datetime import date
+from django.views.decorators.http import require_http_methods
 
 @csrf_exempt
 def hobbies_view(request):
@@ -133,30 +137,55 @@ def get_user_profile(request):
 @require_http_methods(["GET"])
 def get_similar_users(request):
     try:
+        # Get min_age and max_age from query parameters
+        min_age = request.GET.get('min_age')
+        max_age = request.GET.get('max_age')
+
         # Get a random user as reference if not authenticated
         if not request.user.is_authenticated:
             reference_user = CustomUser.objects.order_by('?').first()
         else:
             reference_user = request.user
-            
+
         reference_user_hobbies = set(reference_user.hobbies.all())
-        all_users = CustomUser.objects.exclude(id=reference_user.id)
+
+        # Annotate users with their exact age by considering month and day
+        today = date.today()
+        all_users = CustomUser.objects.annotate(
+            age=ExpressionWrapper(
+                (today.year - F('date_of_birth__year')) - (
+                    Q(date_of_birth__month__gt=today.month) |
+                    (Q(date_of_birth__month=today.month) & Q(date_of_birth__day__gt=today.day))
+                ),
+                output_field=IntegerField()
+            )
+        )
+
+        # Filter by age range if provided
+        if min_age:
+            all_users = all_users.filter(age__gte=int(min_age))
+        if max_age:
+            all_users = all_users.filter(age__lte=int(max_age))
+
+        # Exclude the reference user
+        all_users = all_users.exclude(id=reference_user.id)
+
         user_similarities = []
-        
+
         for user in all_users:
             user_hobbies = set(user.hobbies.all())
             common_hobbies = reference_user_hobbies.intersection(user_hobbies)
-            
+
             if len(common_hobbies) > 0:
                 user_similarities.append({
                     'name': user.name,
                     'common_hobbies': [{'id': hobby.id, 'name': hobby.name} for hobby in common_hobbies],
                     'similarity_score': len(common_hobbies)
                 })
-        
+
         # Sort by similarity score in descending order
         user_similarities.sort(key=lambda x: x['similarity_score'], reverse=True)
-        
+
         return JsonResponse({
             'similar_users': user_similarities,
             'reference_user': reference_user.name if not request.user.is_authenticated else None

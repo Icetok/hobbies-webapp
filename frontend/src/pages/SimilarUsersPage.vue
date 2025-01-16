@@ -1,6 +1,33 @@
 <template>
   <div>
     <h2>Users with Similar Hobbies</h2>
+
+    <!-- Filter Section -->
+    <div class="filter-section mb-4">
+      <h4>Filter by Age</h4>
+      <div class="d-flex align-items-center">
+        <label for="min-age" class="me-2">Min Age:</label>
+        <input
+          id="min-age"
+          type="number"
+          v-model="filters.min_age"
+          @input="fetchSimilarUsers"
+          placeholder="e.g. 20"
+          class="form-control me-3"
+        />
+
+        <label for="max-age" class="me-2">Max Age:</label>
+        <input
+          id="max-age"
+          type="number"
+          v-model="filters.max_age"
+          @input="fetchSimilarUsers"
+          placeholder="e.g. 30"
+          class="form-control"
+        />
+      </div>
+    </div>
+
     <div v-if="loading">Loading...</div>
     
     <div v-if="referenceUser" class="alert alert-info mb-3">
@@ -45,19 +72,36 @@ export default defineComponent({
       similarUsers: [] as SimilarUser[],
       loading: true,
       referenceUser: null as string | null,
+      filters: {
+        min_age: null as number | null,
+        max_age: null as number | null,
+      },
     };
   },
   methods: {
     async fetchSimilarUsers() {
+      this.loading = true;
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/similar-users/", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
+        // Construct query parameters for the filters
+        const params = new URLSearchParams();
+        if (this.filters.min_age !== null) {
+          params.append("min_age", this.filters.min_age.toString());
+        }
+        if (this.filters.max_age !== null) {
+          params.append("max_age", this.filters.max_age.toString());
+        }
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/similar-users/?${params.toString()}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
           }
-        });
+        );
 
         const data = await response.json();
         if (response.ok) {
