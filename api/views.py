@@ -120,29 +120,20 @@ def get_user_profile(request):
 
 @require_http_methods(["GET"])
 def get_similar_users(request):
-    print(f"Session ID: {request.session.session_key}")
-    print(f"User: {request.user}")
-    print(f"Authenticated: {request.user.is_authenticated}")
-    print(f"Cookies: {request.COOKIES}")
-    
-    if not request.user.is_authenticated:
-        return JsonResponse({
-            'error': 'User not authenticated',
-            'debug': {
-                'session_id': request.session.session_key,
-                'cookies': request.COOKIES,
-            }
-        }, status=401)
-    
     try:
-        current_user = request.user
-        current_user_hobbies = set(current_user.hobbies.all())
-        all_users = CustomUser.objects.exclude(id=current_user.id)
+        # Get a random user as reference if not authenticated
+        if not request.user.is_authenticated:
+            reference_user = CustomUser.objects.order_by('?').first()
+        else:
+            reference_user = request.user
+            
+        reference_user_hobbies = set(reference_user.hobbies.all())
+        all_users = CustomUser.objects.exclude(id=reference_user.id)
         user_similarities = []
         
         for user in all_users:
             user_hobbies = set(user.hobbies.all())
-            common_hobbies = current_user_hobbies.intersection(user_hobbies)
+            common_hobbies = reference_user_hobbies.intersection(user_hobbies)
             
             if len(common_hobbies) > 0:
                 user_similarities.append({
@@ -151,9 +142,14 @@ def get_similar_users(request):
                     'similarity_score': len(common_hobbies)
                 })
         
-        return JsonResponse({'similar_users': user_similarities})
+        # Sort by similarity score in descending order
+        user_similarities.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        return JsonResponse({
+            'similar_users': user_similarities,
+            'reference_user': reference_user.name if not request.user.is_authenticated else None
+        })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
         return JsonResponse({'error': str(e)}, status=500)
 
 @require_http_methods(["GET"])

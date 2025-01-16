@@ -1,92 +1,104 @@
 <template>
-    <div v-if="isAuthenticated">
-      <h2>Users with Similar Hobbies</h2>
-      <div v-if="loading">Loading...</div>
-      
-      <div v-else-if="similarUsers.length > 0">
-        <div v-for="user in similarUsers" :key="user.name" class="user-card mb-3 p-3 border rounded">
-          <h3>{{ user.name }}</h3>
-          <p>
-            <strong>Common Hobbies ({{ user.similarity_score }}):</strong>
-            <span v-for="(hobby, index) in user.common_hobbies" :key="hobby.id">
-              {{ hobby.name }}{{ index < user.common_hobbies.length - 1 ? ', ' : '' }}
-            </span>
-          </p>
-        </div>
-      </div>
-      
-      <div v-else>
-        <p>No users with similar hobbies found.</p>
+  <div>
+    <h2>Users with Similar Hobbies</h2>
+    <div v-if="loading">Loading...</div>
+    
+    <div v-if="referenceUser" class="alert alert-info mb-3">
+      Showing similarities based on {{ referenceUser }}'s hobbies
+    </div>
+    
+    <div v-if="!loading && similarUsers.length > 0">
+      <div v-for="user in similarUsers" :key="user.name" class="user-card mb-3 p-3 border rounded">
+        <h3>{{ user.name }}</h3>
+        <p>
+          <strong>{{ user.similarity_score }} {{ user.similarity_score === 1 ? 'Hobby' : 'Hobbies' }} in Common:</strong>
+          <span v-for="(hobby, index) in user.common_hobbies" :key="hobby.id">
+            {{ hobby.name }}{{ index < user.common_hobbies.length - 1 ? ', ' : '' }}
+          </span>
+        </p>
       </div>
     </div>
-  
-    <div v-else>
-      <p>Please log in to view similar users.</p>
+    
+    <div v-else-if="!loading">
+      <p>No users with similar hobbies found.</p>
     </div>
-  </template>
-  
-  <script lang="ts">
-  import { defineComponent } from "vue";
-  import { useUserStore } from "@/store/user";
-  
-  interface Hobby {
-    id: number;
-    name: string;
-  }
-  
-  interface SimilarUser {
-    name: string;
-    common_hobbies: Hobby[];
-    similarity_score: number;
-  }
-  
-  export default defineComponent({
-    data() {
-      return {
-        similarUsers: [] as SimilarUser[],
-        loading: true,
-      };
-    },
-    computed: {
-      isAuthenticated() {
-        const userStore = useUserStore();
-        return userStore.isAuthenticated;
-      },
-    },
-    methods: {
-      async fetchSimilarUsers() {
-        try {
-          const response = await fetch("http://127.0.0.1:8000/api/similar-users/", {
-            method: "GET",
-            credentials: "include",
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            }
-          });
+  </div>
+</template>
 
-          const data = await response.json();
-          if (response.ok) {
-            this.similarUsers = data.similar_users;
-            console.log("Fetched similar users:", data);
-          } else {
-            console.error("Failed to fetch similar users:", data.error);
+<script lang="ts">
+import { defineComponent } from "vue";
+
+interface Hobby {
+  id: number;
+  name: string;
+}
+
+interface SimilarUser {
+  name: string;
+  common_hobbies: Hobby[];
+  similarity_score: number;
+}
+
+export default defineComponent({
+  data() {
+    return {
+      similarUsers: [] as SimilarUser[],
+      loading: true,
+      referenceUser: null as string | null,
+    };
+  },
+  methods: {
+    async fetchSimilarUsers() {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/similar-users/", {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
           }
-        } catch (error) {
-          console.error("Error fetching similar users:", error);
-        } finally {
-          this.loading = false;
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          this.similarUsers = data.similar_users;
+          this.referenceUser = data.reference_user;
+        } else {
+          console.error("Failed to fetch similar users:", data.error);
         }
-      },
+      } catch (error) {
+        console.error("Error fetching similar users:", error);
+      } finally {
+        this.loading = false;
+      }
     },
-    async mounted() {
-      await this.fetchSimilarUsers();
-    },
-  });
-  </script>
-  
-  <style scoped>
-  .user-card {
-    background-color: #f8f9fa;
-  }
-  </style>
+  },
+  mounted() {
+    this.fetchSimilarUsers();
+  },
+});
+</script>
+
+<style scoped>
+.user-card {
+  background-color: #f8f9fa;
+  transition: transform 0.2s;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert {
+  padding: 0.75rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+}
+
+.alert-info {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+}
+</style>
