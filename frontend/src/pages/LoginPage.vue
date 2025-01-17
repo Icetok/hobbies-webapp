@@ -6,6 +6,12 @@
       <input v-model="formData.password" placeholder="Password" type="password" required />
       <button type="submit">Login</button>
     </form>
+    <div v-if="successMessage" class="alert alert-success mt-3">
+      {{ successMessage }}
+    </div>
+    <div v-if="errorMessage" class="alert alert-danger mt-3">
+      {{ errorMessage }}
+    </div>
   </div>
 </template>
 
@@ -20,6 +26,8 @@ export default defineComponent({
         username: '',
         password: '',
       },
+      successMessage: '', // For success alert
+      errorMessage: '', // For error alert
     };
   },
   methods: {
@@ -43,19 +51,44 @@ export default defineComponent({
           userStore.setProfile(data.profile);
           console.log('Login successful, session:', data.sessionid);
           
+          this.successMessage = `Logged in as: ${data.username}`; // Show success message
+          this.errorMessage = ''; // Clear any previous error message
+
           // Wait a brief moment for the session to be established
           await new Promise(resolve => setTimeout(resolve, 100));
           
           this.$router.push('/');
         } else {
           console.error('Login failed:', data.error);
-          alert(`Login failed: ${data.error}`);
+          this.errorMessage = `Login failed: ${data.error}`; // Show error message
+          this.successMessage = ''; // Clear any previous success message
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed: Network error');
+        this.errorMessage = 'Login failed: Network error'; // Show network error
+        this.successMessage = ''; // Clear any previous success message
       }
     },
   },
 });
 </script>
+
+<style scoped>
+.alert {
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+.alert-success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+.alert-danger {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+.mt-3 {
+  margin-top: 1rem;
+}
+</style>
