@@ -57,6 +57,18 @@ def signup_view(request):
     return JsonResponse({'error': 'GET method not allowed'}, status=405)
 
 @csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_user(request, username):
+    try:
+        user = CustomUser.objects.get(username=username)
+        user.delete()
+        return JsonResponse({'message': f'User {username} deleted successfully.'}, status=200)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'error': f'User {username} not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Failed to delete user: {str(e)}'}, status=500)
+
+@csrf_exempt
 def login_view(request):
     if request.method == 'POST':
         try:
