@@ -6,7 +6,7 @@ from .forms import CustomUserCreationForm, LoginForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from .models import Hobby, CustomUser
+from .models import Hobby, CustomUser, FriendRequest
 import json
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
@@ -175,12 +175,22 @@ def get_similar_users(request):
         for user in all_users:
             user_hobbies = set(user.hobbies.all())
             common_hobbies = reference_user_hobbies.intersection(user_hobbies)
+            is_friend = FriendRequest.objects.filter(
+                Q(sender=request.user, receiver=user, status='accepted') |
+                Q(sender=user, receiver=request.user, status='accepted')
+            ).exists()
+            request_sent = FriendRequest.objects.filter(
+                sender=request.user, receiver=user, status='pending'
+            ).exists()
 
             if len(common_hobbies) > 0:
                 user_similarities.append({
+                    'id': user.id,  # Add user ID here
                     'name': user.name,
                     'common_hobbies': [{'id': hobby.id, 'name': hobby.name} for hobby in common_hobbies],
-                    'similarity_score': len(common_hobbies)
+                    'similarity_score': len(common_hobbies),
+                    'is_friend': is_friend,
+                    'request_sent': request_sent
                 })
 
         # Sort by similarity score in descending order
@@ -195,10 +205,23 @@ def get_similar_users(request):
 
 @require_http_methods(["GET"])
 def auth_status(request):
+    if request.user.is_authenticated:
+        hobbies = [{'id': hobby.id, 'name': hobby.name} for hobby in request.user.hobbies.all()]
+        return JsonResponse({
+            'isAuthenticated': True,
+            'username': request.user.username,
+            'profile': {
+                'name': request.user.name,
+                'email': request.user.email,
+                'date_of_birth': request.user.date_of_birth,
+                'hobbies': hobbies
+            }
+        })
     return JsonResponse({
-        'isAuthenticated': request.user.is_authenticated,
-        'username': request.user.username if request.user.is_authenticated else None
+        'isAuthenticated': False,
+        'username': None
     })
+
 
 @require_http_methods(["GET"])
 def check_session(request):
@@ -291,3 +314,71 @@ def change_password(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+@login_required
+def send_friend_request(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            receiver_id = data.get('to_user_id')  # Adjusted key name
+            receiver = CustomUser.objects.get(id=receiver_id)
+
+            if FriendRequest.objects.filter(sender=request.user, receiver=receiver, status='pending').exists():
+                return JsonResponse({'error': 'Friend request already sent.'}, status=400)
+
+            FriendRequest.objects.create(sender=request.user, receiver=receiver)
+            return JsonResponse({'message': 'Friend request sent successfully!'}, status=200)
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'error': 'User not found.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid method.'}, status=405)
+
+
+
+@csrf_exempt
+@login_required
+def respond_friend_request(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            request_id = data.get('request_id')
+            action = data.get('action')  # 'accept' or 'reject'
+
+            friend_request = FriendRequest.objects.get(id=request_id, receiver=request.user)
+
+            if action == 'accept':
+                friend_request.status = 'accepted'
+                friend_request.save()
+                # You can add mutual friendship logic here if needed
+
+            elif action == 'reject':
+                friend_request.delete()
+
+            return JsonResponse({'message': f'Friend request {action}ed successfully!'}, status=200)
+        except FriendRequest.DoesNotExist:
+            return JsonResponse({'error': 'Friend request not found.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid method.'}, status=405)
+
+
+
+@login_required
+def list_friend_requests(request):
+    if request.method == 'GET':
+        friend_requests = FriendRequest.objects.filter(receiver=request.user, status='pending')
+        requests_data = [
+            {
+                'id': fr.id,
+                'sender': {
+                    'id': fr.sender.id,
+                    'username': fr.sender.username,
+                },
+                'status': fr.status,
+            }
+            for fr in friend_requests
+        ]
+        return JsonResponse({'friend_requests': requests_data}, safe=False)
+    return JsonResponse({'error': 'Invalid method.'}, status=405)
