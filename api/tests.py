@@ -18,6 +18,10 @@ class AccountTests(StaticLiveServerTestCase):
 
     def tearDown(self):
         # Delete test users via API
+        self.delete_user("testuser1")
+        self.delete_user("testuser2")
+        self.delete_user("testuser3")
+        self.delete_user("testuser")
         self.driver.quit()
 
     def create_user(self, username, name, email, password, date_of_birth, hobbies):
@@ -72,24 +76,6 @@ class AccountTests(StaticLiveServerTestCase):
         assert response.status_code == 200, f"Failed to delete user {username}: {response.text}"
 
     def test_signup(self):
-        # Create test users via API
-        self.create_user(
-            username="testuser1",
-            name="Test User 1",
-            email="testuser1@example.com",
-            password="testpassword",
-            date_of_birth="2000-01-01",
-            hobbies=[2],
-        )
-        self.create_user(
-            username="testuser2",
-            name="Test User 2",
-            email="testuser2@example.com",
-            password="testpassword",
-            date_of_birth="2000-01-01",
-            hobbies=[2],
-        )
-        
         # Navigate to signup page
         self.driver.get(f"{self.frontend_url}/signup/")
         
@@ -121,7 +107,6 @@ class AccountTests(StaticLiveServerTestCase):
 
         # Assert successful redirection
         self.assertIn("Login", self.driver.page_source)
-        self.delete_user("testuser")
 
     def test_login(self):
         self.create_user(
@@ -156,9 +141,25 @@ class AccountTests(StaticLiveServerTestCase):
         WebDriverWait(self.driver, 10).until(
             EC.url_to_be(f"{self.frontend_url}/login/")
         )
-        self.delete_user("testuser3")
 
     def test_friend_request(self):
+        # Create test users via API
+        self.create_user(
+            username="testuser1",
+            name="Test User 1",
+            email="testuser1@example.com",
+            password="testpassword",
+            date_of_birth="2000-01-01",
+            hobbies=[2],
+        )
+        self.create_user(
+            username="testuser2",
+            name="Test User 2",
+            email="testuser2@example.com",
+            password="testpassword",
+            date_of_birth="2000-01-01",
+            hobbies=[2],
+        )
         # Log in as the first user and send a friend request
         self.login("testuser1", "testpassword")
         self.driver.get(f"{self.frontend_url}/similar-users/")
@@ -199,5 +200,9 @@ class AccountTests(StaticLiveServerTestCase):
         # Verify the friend request is no longer visible
         with self.assertRaises(Exception):
             self.driver.find_element(By.XPATH, "//p[contains(text(), 'testuser1 sent you a friend request.')]")
-        self.delete_user("testuser1")
-        self.delete_user("testuser2")
+            
+        # Log out testuser2
+        self.driver.find_element(By.XPATH, "//button[text()='Logout']").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.url_to_be(f"{self.frontend_url}/login/")
+        )
