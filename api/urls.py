@@ -16,6 +16,8 @@ Including another URLconf
 # api/urls.py
 from django.urls import path
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('signup/', views.signup_view, name='signup'),
@@ -32,3 +34,6 @@ urlpatterns = [
     path('friend-requests/respond/', views.respond_friend_request, name='respond_friend_request'),
     path('friend-requests/', views.list_friend_requests, name='list_friend_requests'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
