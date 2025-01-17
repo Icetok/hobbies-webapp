@@ -33,6 +33,7 @@ urlpatterns = [
     path('friend-requests/send/', views.send_friend_request, name='send_friend_request'),
     path('friend-requests/respond/', views.respond_friend_request, name='respond_friend_request'),
     path('friend-requests/', views.list_friend_requests, name='list_friend_requests'),
+    path('delete-user/<str:username>/', views.delete_user, name='delete_user'),
 ]
 
 if settings.DEBUG:
