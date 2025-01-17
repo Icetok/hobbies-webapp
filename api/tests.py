@@ -194,7 +194,7 @@ class AccountTests(StaticLiveServerTestCase):
         friend_request_card = self.driver.find_element(
             By.XPATH, "//p[contains(text(), 'testuser1 sent you a friend request.')]"
         )
-        accept_button = friend_request_card.find_element(By.XPATH, ".//button[contains(@class, 'btn-success')]")
+        accept_button = friend_request_card.find_element(By.XPATH, "//button[contains(text(), 'Accept')]")
 
         # Scroll into view and click
         self.driver.execute_script("arguments[0].scrollIntoView();", accept_button)
