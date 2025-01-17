@@ -9,36 +9,18 @@ from api.models import CustomUser
 import requests
 
 class AccountTests(StaticLiveServerTestCase):
+
     def setUp(self):
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service)
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(10)  # Default waiting time
         self.frontend_url = "http://localhost:5173"  # Frontend URL
-        self.api_url = "http://127.0.0.1:8000/api"  # Backend API URL
+
+        # Ensure no test users exist to prevent conflicts
+        CustomUser.objects.filter(username__in=["testuser", "testuser1"]).delete()
 
     def tearDown(self):
-        # Delete test users via API
-        self.delete_user("testuser1")
-        self.delete_user("testuser2")
-        self.delete_user("testuser3")
-        self.delete_user("testuser")
         self.driver.quit()
-
-    def create_user(self, username, name, email, password, date_of_birth, hobbies):
-        """Create a test user using the API."""
-        response = requests.post(
-            f"{self.api_url}/signup/",
-            json={
-                "username": username,
-                "name": name,
-                "email": email,
-                "password1": password,
-                "password2": password,
-                "date_of_birth": date_of_birth,
-                "hobbies": hobbies,
-            },
-        )
-        assert response.status_code == 200, f"Failed to create user {username}: {response.text}"
 
     def handle_alert(self):
         """Dismiss any open alert and return its text."""
@@ -51,121 +33,64 @@ class AccountTests(StaticLiveServerTestCase):
         except Exception as e:
             print(f"No alert found: {e}")
             return None
-        
-    def login(self, username, password):
-        """Reusable method to log in a user."""
-        # Navigate to login page
+
+    def create_user(self, username, email, password, dob):
+        """Helper function to create a user via the signup page."""
+        CustomUser.objects.filter(username=username).delete()
+        CustomUser.objects.filter(email=email).delete()
+        self.driver.get(f"{self.frontend_url}/signup/")
+
+        # Fill in signup form
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Username']"))
+        )
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Username']").send_keys(username)
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Name']").send_keys(f"{username} User")
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Email']").send_keys(email)
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Date of Birth']").send_keys(dob)
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Password']").send_keys(password)
+        self.driver.find_element(By.XPATH, "//input[@placeholder='Confirm Password']").send_keys(password)
+
+        # Select hobbies
+        self.driver.find_element(By.XPATH, "//input[@value='1']").click()
+        self.driver.find_element(By.XPATH, "//input[@value='2']").click()
+        self.driver.find_element(By.XPATH, "//input[@value='3']").click()
+
+        # Submit form
+        self.driver.find_element(By.XPATH, "//button[text()='Sign Up']").click()
+
+        # Handle success alert
+        alert_text = self.handle_alert()
+        self.assertIn("Signup successful!", alert_text)
+
+    def login_user(self, username, password):
+        """Helper function to log in a user."""
         self.driver.get(f"{self.frontend_url}/login/")
-        
-        # Fill out login form
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Username']"))
+        )
         self.driver.find_element(By.XPATH, "//input[@placeholder='Username']").send_keys(username)
         self.driver.find_element(By.XPATH, "//input[@placeholder='Password']").send_keys(password)
-        
-        # Submit form
         self.driver.find_element(By.XPATH, "//button[text()='Login']").click()
-        
+
         # Wait for successful login
         WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Logged in as:')]"))
         )
         self.assertIn(f"Logged in as: {username}", self.driver.page_source)
-        
-    def delete_user(self, username):
-        """Delete a test user using the API."""
-        response = requests.delete(f"{self.api_url}/delete-user/{username}/")
-        assert response.status_code == 200, f"Failed to delete user {username}: {response.text}"
-
-    def test_signup(self):
-        # Navigate to signup page
-        self.driver.get(f"{self.frontend_url}/signup/")
-        
-        # Fill out signup form
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Username']").send_keys("testuser")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Name']").send_keys("Test User")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Email']").send_keys("testuser@example.com")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Date of Birth']").send_keys("2000-01-01")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Password']").send_keys("testpassword")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Confirm Password']").send_keys("testpassword")
-        
-        # Select hobbies (checkboxes with values 1, 2, 3)
-        self.driver.find_element(By.XPATH, "//input[@value='1']").click()
-        self.driver.find_element(By.XPATH, "//input[@value='2']").click()
-        self.driver.find_element(By.XPATH, "//input[@value='3']").click()
-        
-        # Submit form
-        self.driver.find_element(By.XPATH, "//button[text()='Sign Up']").click()
-        
-        # Handle success alert
-        alert_text = self.handle_alert()
-        self.assertIsNotNone(alert_text, "Expected an alert after signup, but none was found.")
-        self.assertIn("Signup successful!", alert_text)
-
-        # Wait for redirection to login page
-        WebDriverWait(self.driver, 10).until(
-            EC.url_to_be(f"{self.frontend_url}/login/")
-        )
-
-        # Assert successful redirection
-        self.assertIn("Login", self.driver.page_source)
-
-    def test_login(self):
-        self.create_user(
-            username="testuser3",
-            name="Test User 3",
-            email="testuser3@example.com",
-            password="testpassword",
-            date_of_birth="2000-01-01",
-            hobbies=[1],
-        )
-
-        # Navigate to login page
-        self.driver.get(f"{self.frontend_url}/login/")
-        # Fill out login form
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Username']").send_keys("testuser3")
-        self.driver.find_element(By.XPATH, "//input[@placeholder='Password']").send_keys("testpassword")
-        # Submit form
-        self.driver.find_element(By.XPATH, "//button[text()='Login']").click()
-        # Handle success alert (if any)
-        alert_text = self.handle_alert()
-        if alert_text:
-            print(f"Login alert: {alert_text}")
-        # Wait for redirection to main page
-        WebDriverWait(self.driver, 10).until(
-            EC.url_to_be(f"{self.frontend_url}/")
-        )
-        # Assert successful login
-        self.assertIn("Logged in as: testuser3", self.driver.page_source)
-
-        # Log out the user
-        self.driver.find_element(By.XPATH, "//button[text()='Logout']").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.url_to_be(f"{self.frontend_url}/login/")
-        )
 
     def test_friend_request(self):
-        # Create test users via API
-        self.create_user(
-            username="testuser1",
-            name="Test User 1",
-            email="testuser1@example.com",
-            password="testpassword",
-            date_of_birth="2000-01-01",
-            hobbies=[2],
-        )
-        self.create_user(
-            username="testuser2",
-            name="Test User 2",
-            email="testuser2@example.com",
-            password="testpassword",
-            date_of_birth="2000-01-01",
-            hobbies=[2],
-        )
-        # Log in as the first user and send a friend request
-        self.login("testuser1", "testpassword")
+        """Test sending and accepting a friend request."""
+        # Create test users
+        self.create_user("testuser4", "testuser4@example.com", "testpassword", "01/01/2000")
+        self.create_user("testuser5", "testuser5@example.com", "testpassword", "01/01/2000")
+
+        # Log in as testuser4 and send a friend request to testuser5
+        self.login_user("testuser4", "testpassword")
         self.driver.get(f"{self.frontend_url}/similar-users/")
 
-        # Locate the card for testuser2 and send a friend request
-        user_card = self.driver.find_element(By.XPATH, "//h3[text()='Test User 2']/..")
+        # Locate the card for testuser5 and send a friend request
+        user_card = self.driver.find_element(By.XPATH, "//h3[text()='testuser5 User']/..")
         send_request_button = user_card.find_element(By.XPATH, ".//button[contains(text(), 'Send Friend Request')]")
         self.driver.execute_script("arguments[0].scrollIntoView();", send_request_button)
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(send_request_button))
@@ -176,16 +101,19 @@ class AccountTests(StaticLiveServerTestCase):
         self.assertIsNotNone(alert_text, "Expected an alert after sending the friend request, but none was found.")
         self.assertIn("Friend request sent successfully!", alert_text)
 
-        # Log out testuser1
+        # Log out testuser4
         self.driver.find_element(By.XPATH, "//button[text()='Logout']").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.url_to_be(f"{self.frontend_url}/login/")
+        )
 
-        # Log in as testuser2 and accept the friend request
-        self.login("testuser2", "testpassword")
+        # Log in as testuser5 and accept the friend request
+        self.login_user("testuser5", "testpassword")
         self.driver.get(f"{self.frontend_url}/friend-requests/")
 
         # Accept the friend request
         friend_request_card = self.driver.find_element(
-            By.XPATH, "//p[contains(text(), 'testuser1 sent you a friend request.')]"
+            By.XPATH, "//p[contains(text(), 'testuser4 sent you a friend request.')]"
         )
         accept_button = friend_request_card.find_element(By.XPATH, "//button[contains(text(), 'Accept')]")
         self.driver.execute_script("arguments[0].scrollIntoView();", accept_button)
@@ -199,10 +127,87 @@ class AccountTests(StaticLiveServerTestCase):
 
         # Verify the friend request is no longer visible
         with self.assertRaises(Exception):
-            self.driver.find_element(By.XPATH, "//p[contains(text(), 'testuser1 sent you a friend request.')]")
-            
-        # Log out testuser2
+            self.driver.find_element(By.XPATH, "//p[contains(text(), 'testuser4 sent you a friend request.')]")
+
+        # Log out testuser5
         self.driver.find_element(By.XPATH, "//button[text()='Logout']").click()
         WebDriverWait(self.driver, 10).until(
             EC.url_to_be(f"{self.frontend_url}/login/")
         )
+
+    def edit_user_profile(self, name, email, dob):
+        """Helper function to edit the user's profile."""
+        # Navigate to the user's profile edit page
+        self.driver.get(f"{self.frontend_url}")
+
+        # Wait for the "Edit Profile" button (Assuming there's a button that opens the modal)
+        WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Edit Profile']"))).click()
+
+        # Wait for the modal to open and the form elements to be visible
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='modal-content']")))
+
+        # Wait for the page to load and the elements to be present
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='name']")))
+
+        # Edit profile fields
+        self.driver.find_element(By.XPATH, "//*[@id='name']").clear()
+        self.driver.find_element(By.XPATH, "//*[@id='name']").send_keys(name)
+        
+        self.driver.find_element(By.XPATH, "//*[@id='email']").clear()
+        self.driver.find_element(By.XPATH, "//*[@id='email']").send_keys(email)
+        
+        self.driver.find_element(By.XPATH, "//*[@id='dob']").clear()
+        self.driver.find_element(By.XPATH, "//*[@id='dob']").send_keys(dob)
+        
+        # Submit the form
+        self.driver.find_element(By.XPATH, "//button[text()='Save Changes']").click()
+
+        # Verify the changes
+        WebDriverWait(self.driver, 10).until(
+            lambda driver: name in driver.page_source and email in driver.page_source and dob in driver.page_source
+        )
+
+    def test_signup_and_login(self):
+        """Test the user can sign up and log in."""
+        # UK formatted dob (DD/MM/YYYY)
+        self.create_user("testuser", "testuser@example.com", "testpassword", "15/12/1999")
+        self.login_user("testuser", "testpassword")
+
+    def test_edit_profile(self):
+        """Test the user can edit their profile information."""
+        #  dob (DD/MM/YYYY)
+        self.create_user("testuser1", "testuser1@example.com", "testpassword", "25/04/1990")
+        self.login_user("testuser1", "testpassword")
+        self.edit_user_profile("Updated Test User", "updatedemail@example.com", "15/05/1995")  
+
+    def test_filter_by_age(self):
+        """Test filtering users by age."""
+        # Create users with different ages using UK formatted dob
+        self.create_user("younguser", "younguser@example.com", "testpassword", "01/01/2005")  # Young user
+        self.create_user("olduser", "olduser@example.com", "testpassword", "01/01/1980")  # Old user
+        self.create_user("testuser2", "testuser2@example.com", "testpassword", "01/01/1990")  # Neutral age user
+        self.login_user("testuser2", "testpassword")
+
+        # Navigate to the users page
+        self.driver.get(f"{self.frontend_url}/similar-users/")
+
+        # Wait for the filter elements to load
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='min-age']")))
+
+        # Set filters (Assuming there's a filter input field for age)
+        self.driver.find_element(By.XPATH, "//*[@id='min-age']").send_keys("20")
+        self.driver.find_element(By.XPATH, "//*[@id='max-age']").send_keys("30")
+
+        # Wait for the data to update after the input (ensure the filter updates the results)
+        WebDriverWait(self.driver, 10).until(
+            lambda driver: "younguser" in driver.page_source and "olduser" not in driver.page_source
+        )
+
+        # Verify only users within the age range appear
+        self.assertIn("younguser", self.driver.page_source)
+        self.assertNotIn("olduser", self.driver.page_source)
+
+    def delete_user(self, username):
+        """Delete a test user using the API."""
+        response = requests.delete(f"{self.api_url}/delete-user/{username}/")
+        assert response.status_code == 200, f"Failed to delete user {username}: {response.text}"
