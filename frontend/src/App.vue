@@ -7,6 +7,7 @@
         <router-link v-if="isAuthenticated" :to="{ name: 'Main Page' }">Main Page</router-link> |
         <router-link v-if="isAuthenticated" :to="{ name: 'Add Hobby' }">Add Hobby</router-link> |
         <router-link v-if="isAuthenticated" :to="{ name: 'Similar Users' }">Similar Users</router-link> |
+        <router-link v-if="isAuthenticated" :to="{ name: 'Friend Requests' }">Friend Requests</router-link> |
         <button v-if="isAuthenticated" @click="logout">Logout</button>
       </div>
       <div v-if="isAuthenticated" class="text-muted">
