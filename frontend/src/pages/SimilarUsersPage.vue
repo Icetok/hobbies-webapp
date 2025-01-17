@@ -29,11 +29,11 @@
     </div>
 
     <div v-if="loading">Loading...</div>
-    
+
     <div v-if="referenceUser" class="alert alert-info mb-3">
       Showing similarities based on {{ referenceUser }}'s hobbies.
     </div>
-    
+
     <div v-if="!loading && similarUsers.length > 0">
       <div v-for="user in similarUsers" :key="user.name" class="user-card mb-3 p-3 border rounded">
         <h3>{{ user.name }}</h3>
@@ -43,9 +43,18 @@
             {{ hobby.name }}{{ index < user.common_hobbies.length - 1 ? ', ' : '' }}
           </span>
         </p>
+        <div v-if="user.isFriend" class="text-success mt-2">Friends</div>
+        <button
+          v-else
+          class="btn btn-primary mt-2"
+          @click="sendFriendRequest(user.id)"
+          :disabled="user.requestSent"
+        >
+          {{ user.requestSent ? 'Request Sent' : 'Send Friend Request' }}
+        </button>
       </div>
     </div>
-    
+
     <div v-else-if="!loading">
       <p>No users with similar hobbies found.</p>
     </div>
@@ -61,9 +70,12 @@ interface Hobby {
 }
 
 interface SimilarUser {
+  id: number;
   name: string;
   common_hobbies: Hobby[];
   similarity_score: number;
+  isFriend: boolean; // Indicates if the user is already a friend
+  requestSent: boolean; // Tracks if a friend request has been sent
 }
 
 export default defineComponent({
@@ -82,7 +94,6 @@ export default defineComponent({
     async fetchSimilarUsers() {
       this.loading = true;
       try {
-        // Construct query parameters for the filters
         const params = new URLSearchParams();
         if (this.filters.min_age !== null) {
           params.append("min_age", this.filters.min_age.toString());
@@ -105,7 +116,11 @@ export default defineComponent({
 
         const data = await response.json();
         if (response.ok) {
-          this.similarUsers = data.similar_users;
+          this.similarUsers = data.similar_users.map((user: any) => ({
+            ...user,
+            isFriend: user.is_friend || false, // Backend should include this field
+            requestSent: user.request_sent || false, // Backend should include this field
+          }));
           this.referenceUser = data.reference_user;
         } else {
           console.error("Failed to fetch similar users:", data.error);
@@ -114,6 +129,31 @@ export default defineComponent({
         console.error("Error fetching similar users:", error);
       } finally {
         this.loading = false;
+      }
+    },
+    async sendFriendRequest(userId: number) {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/friend-requests/send/",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to_user_id: userId }),
+          }
+        );
+
+        if (response.ok) {
+          const user = this.similarUsers.find((u) => u.id === userId);
+          if (user) user.requestSent = true;
+          alert("Friend request sent successfully!");
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to send friend request: ${errorData.error}`);
+        }
+      } catch (error) {
+        console.error("Error sending friend request:", error);
+        alert("Failed to send friend request. Please try again.");
       }
     },
   },
@@ -131,7 +171,7 @@ export default defineComponent({
 
 .user-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .alert {
@@ -144,5 +184,9 @@ export default defineComponent({
   color: #0c5460;
   background-color: #d1ecf1;
   border-color: #bee5eb;
+}
+
+.btn {
+  margin-top: 10px;
 }
 </style>
