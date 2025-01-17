@@ -28,4 +28,7 @@ urlpatterns = [
     path('check-session/', views.check_session, name='check_session'),
     path('update-profile/', views.update_user_profile, name='update_user_profile'),
     path('change-password/', views.change_password, name='change_password'),
+    path('friend-requests/send/', views.send_friend_request, name='send_friend_request'),
+    path('friend-requests/respond/', views.respond_friend_request, name='respond_friend_request'),
+    path('friend-requests/', views.list_friend_requests, name='list_friend_requests'),
 ]
