@@ -46,7 +46,14 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
     
+class FriendRequest(models.Model):
+    sender = models.ForeignKey(CustomUser, related_name="sent_requests", on_delete=models.CASCADE)
+    receiver = models.ForeignKey(CustomUser, related_name="received_requests", on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=[('pending', 'Pending'), ('accepted', 'Accepted')], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username} ({self.status})"
     
 class PageView(models.Model):
     count = models.IntegerField(default=0)
