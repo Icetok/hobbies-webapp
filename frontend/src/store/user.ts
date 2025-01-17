@@ -14,9 +14,10 @@ export const useUserStore = defineStore('user', {
     profile: null as UserProfile | null,
   }),
   actions: {
-    login(username: string) {
+    login(username: string, profile: UserProfile) {
       this.isAuthenticated = true;
       this.username = username;
+      this.profile = profile;
     },
     logout() {
       this.isAuthenticated = false;
@@ -35,6 +36,10 @@ export const useUserStore = defineStore('user', {
         this.isAuthenticated = data.isAuthenticated;
         if (data.isAuthenticated) {
           this.username = data.username;
+          this.profile = data.profile;
+        } else {
+          this.username = '';
+          this.profile = null;
         }
       } catch (error) {
         this.isAuthenticated = false;
